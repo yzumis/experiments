@@ -1,0 +1,159 @@
+<html>
+	<head>
+	</head>
+	<body>
+		<canvas id="worldCanvas" width="200" height="200"></canvas>
+		<script>
+			const WORLD_SIZE_X = 200;
+			const WORLD_SIZE_Y = 200;
+			
+			
+			class Fairy {
+			
+				MAX_GLOW_LEVEL = 9;
+				
+				constructor(x, y) {
+					this.x = x;
+					this.y = y;
+					this.glowUp = true;
+					this.glowLevel = 0;
+					this.directionAngle = Math.random() * 2 * Math.PI;
+				};
+				
+				draw(context) {
+					for(var i = this.glowLevel; i > 0; i--) {
+						this.drawCircle(context, this.glowLevelToRGBColor(this.MAX_GLOW_LEVEL - i), this.x, this.y, 5 + i);
+					}
+					this.drawCircle(context, '#00FFFF', this.x, this.y, 5);
+				};
+				
+				drawCircle(context, color, x, y, radius) {
+					context.beginPath();
+					context.arc(x, y, radius, 0, 2 * Math.PI);
+					context.fillStyle = color;
+					context.fill();
+					context.lineWitdth = 1;
+					context.strokeStyle = color;
+					context.stroke()
+				};
+				
+				glowLevelToRGBColor(glowLevel) {
+					return '#00FFFF' + glowLevel + glowLevel;
+				};
+				
+				move() {
+					this.changeDirectionAngle();
+					this.changePosition();
+					this.changeGlow();
+				};
+				
+				changeDirectionAngle() {
+					this.directionAngle += this.randomInteger(-1, 1);
+					if(this.directionAngle < 0) {
+						this.directionAngle = 2 * Math.PI - this.directionAngle;
+					}
+					if(this.directionAngle > 2 * Math.PI) {
+						this.directionAngle -= 2 * Math.PI;
+					}
+				};
+				
+				randomInteger(min, max) { // min max are Included
+					return Math.floor(Math.random() * (max - min + 1) ) + min;
+				};
+				
+				changePosition() {
+					this.x+= Math.cos(this.directionAngle);
+					this.y+= Math.sin(this.directionAngle);
+					
+					if(this.x < 0) {
+						this.x = 0;
+					}
+					if(this.y < 0) {
+						this.y = 0;
+					}
+					if(this.x > WORLD_SIZE_X) {
+						this.x = WORLD_SIZE_X;
+					}
+					if(this.y > WORLD_SIZE_Y) {
+						this.y = WORLD_SIZE_Y;
+					}
+				};
+				
+				changeGlow() {
+					if(this.glowUp) {
+						this.glowLevel+= 1;
+						if(this.glowLevel === this.MAX_GLOW_LEVEL) {
+							this.glowUp = false;
+						}
+					} else {
+						this.glowLevel-= 1;
+						if(this.glowLevel === 0) {
+							this.glowUp = true;
+						}
+					}
+				};
+				
+			};
+			
+			const multipleFairies = true;
+			var fairies;
+			var fairy;
+			initialize();
+			play();
+			
+			function initialize() {
+				if(multipleFairies) {
+					fairies = [];
+					for(var i = 0; i < 10; i++) {
+						fairies.push(new Fairy(100, 100));
+					}
+				} else {
+					fairy = new Fairy(100, 100);
+				}
+			};
+			
+			function play() {
+				draw();
+				move();
+				setTimeout(play, 100); // ms
+			};
+			
+			function move() {
+				if(multipleFairies) {
+					for(var i = 0; i < fairies.length; i++) {
+						fairies[i].move();
+					}
+				} else {
+					fairy.move();
+				}
+			};
+			 
+			function draw() {
+				var canvas = document.getElementById('worldCanvas');
+				var context = canvas.getContext('2d');
+				drawBackground(context);
+				if(multipleFairies) {
+					for(var i = 0; i < fairies.length; i++) {
+						fairies[i].draw(context);
+					}
+				} else {
+					fairy.draw(context);
+				}
+			};
+			
+			function drawBackground(context) {
+				drawRectangle(context, 'black', 0, 0, WORLD_SIZE_X, WORLD_SIZE_Y);
+			};
+			
+			function drawRectangle(context, color, x, y, xSize, ySize) {
+				context.beginPath();
+				context.rect(x, y, xSize, ySize);
+				context.fillStyle = color;
+				context.fill();
+				context.lineWidth = 1;
+				context.strokeStyle = color;
+				context.stroke();
+			};
+		</script>
+	</body>
+</html>
