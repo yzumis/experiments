@@ -1,0 +1,278 @@
+<html>
+	<head>
+	</head>
+	<body>
+		<canvas id="myCanvas" width="200" height="100" style="border:1px solid #000000;">
+		</canvas>
+		
+		<script type="text/javascript">
+			const Direction = {
+			   NONE: 1,
+			   LEFT: 2,
+			   RIGHT: 3
+			};
+			
+			class Block {
+				constructor(x, y, xSize, ySize, color) {
+					this.x = x;
+					this.y = y;
+					this.xSize = xSize;
+					this.ySize = ySize;
+					this.color = color;
+				}
+
+				draw() {
+					var canvas = document.getElementById("myCanvas");
+					var context = canvas.getContext("2d");
+					var oldFillStyle = context.fillStyle;
+					context.fillStyle = this.color;
+					context.fillRect(this.x, this.y, this.xSize, this.ySize);
+					context.fillStyle = oldFillStyle;
+				}
+				
+				getX() {
+					return this.x;
+				}
+				
+				getXSize() {
+					return this.xSize;
+				}
+				
+				getY() {
+					return this.y;
+				}
+				
+				getYSize() {
+					return this.ySize;
+				}
+				
+				inside(x, y) {
+					var insideX = this.insideOneDimension(x, this.x, this.x + this.xSize);
+					var insideY = this.insideOneDimension(y, this.y, this.y + this.ySize);
+					return insideX && insideY;
+				}
+				
+				insideOneDimension(x, minX, maxX) {
+					return x > minX && x < maxX;
+				}
+				
+			}
+			
+			class Square {
+				constructor(x, y, xSize, ySize, color) {
+					this.x = x;
+					this.y = y;
+					this.xSize = xSize;
+					this.ySize = ySize;
+					this.xVelocity = 0;
+					this.yVelocity = 0;
+					this.color = color;
+					this.direction = Direction.NONE;
+					this.gravity = 30;
+				}
+				
+				draw() {
+					var canvas = document.getElementById("myCanvas");
+					var context = canvas.getContext("2d");
+					var oldFillStyle = context.fillStyle;
+					context.fillStyle = this.color;
+					context.fillRect(this.x, this.y, this.xSize, this.ySize);
+					context.fillStyle = oldFillStyle;
+				}
+			
+				moveX(timeDifference) {
+					var futureX = this.x + this.xVelocity * timeDifference / 1000;
+					var collision = this.calculateXBlocksCollisitions(this.x, futureX);
+					if(collision !== -1) {
+						futureX = collision;
+					}
+					if(futureX > 200 - this.xSize) {
+						this.x = 200 - this.xSize;
+					} else if(futureX < 0) {
+						this.x = 0;
+					} else {
+						this.x = futureX;
+					}
+				}
+				
+				calculateXBlocksCollisitions(x, futureX) {
+					var collision = -1;
+					for(var i = 0; i < blocks.length; i++) {
+						var iBlockCollisition = this.calculateXBlockCollisition(blocks[i], x, futureX);
+						if(iBlockCollisition !== -1) {
+							if(futureX > x) {
+								if(iBlockCollisition < collision || collision === -1) {
+									collision = iBlockCollisition;
+								}
+							} else if(futureX < x) {
+								if(iBlockCollisition > collision || collision === -1) {
+									collision = iBlockCollisition;
+								}
+							}
+						}
+					}
+					return collision;
+				}
+				
+				calculateXBlockCollisition(block, x, futureX) {
+					var collision = -1;
+					if(futureX > x) {
+						if(block.inside(futureX + this.xSize, this.y) || block.inside(futureX + this.xSize, this.y + this.ySize)) {
+							collision = block.getX() - this.xSize;
+						}
+					} else if(futureX < x) {
+						if(block.inside(futureX, this.y) || block.inside(futureX, this.y + this.ySize)) {
+							collision = block.getX() + block.getXSize();
+						}
+					}
+					return collision;
+				}
+				
+				setXVelocity(xVelocity) {
+					this.xVelocity = xVelocity;
+				}
+				
+				setDirection(direction) {
+					this.direction = direction;
+					if(this.direction === Direction.LEFT) {
+						this.setXVelocity(-100);
+					} else {
+						this.setXVelocity(100);
+					}
+				}
+				
+				unsetDirection(direction) {
+					if(this.direction === direction) {
+						this.direction = Direction.NONE;
+						this.setXVelocity(0);
+					}
+				}
+				
+				jump() {
+					this.yVelocity = -1000;
+				}
+				
+				moveY(timeDifference) {
+					var effectiveGravity;
+					if (this.yVelocity < 0) {
+						effectiveGravity = this.gravity;
+					} else {
+						effectiveGravity = 0;
+					}
+					var futureY = this.y + (timeDifference / 1000) * this.yVelocity + (timeDifference / 1000) * effectiveGravity * effectiveGravity;
+					var collision = this.calculateYBlocksCollisitions(this.y, futureY);
+					if(collision !== -1) {
+						futureY = collision;
+					}
+					if(futureY < 0) {
+						this.y = 0;
+					} else if(futureY > 100 - this.ySize) {
+						this.y = 100 - this.ySize;
+					} else {
+						this.y = futureY;
+					}
+					var futureYVelocity = this.yVelocity + (timeDifference / 1000) * effectiveGravity * 10;
+					this.yVelocity = futureYVelocity;
+				}
+				
+				calculateYBlocksCollisitions(y, futureY) {
+					var collision = -1;
+					for(var i = 0; i < blocks.length; i++) {
+						var iBlockCollisition = this.calculateYBlockCollisition(blocks[i], y, futureY);
+						if(iBlockCollisition !== -1) {
+							if(futureY > y) {
+								if(iBlockCollisition < collision || collision === -1) {
+									collision = iBlockCollisition;
+								}
+							} else if(futureY < y) {
+								if(iBlockCollisition > collision || collision === -1) {
+									collision = iBlockCollisition;
+								}
+							}
+						}
+					}
+					return collision;
+				}
+				
+				calculateYBlockCollisition(block, y, futureY) {
+					var collision = -1;
+					if(futureY > y) {
+						if(block.inside(this.x, futureY + this.ySize) || block.inside(this.x + this.xSize, futureY + this.ySize)) {
+							collision = block.getY() - this.ySize;
+						}
+					} else if(futureY < y) {
+						if(block.inside(this.x, futureY) || block.inside(this.x + this.xSize, futureY)) {
+							collision = block.getY() + block.getYSize();
+						}
+					}
+					return collision;
+				}
+				
+			}
+			
+			var background;
+			var square;
+			var blocks;
+			
+			function init() {
+				background = new Square(0, 0, 200, 100, "#FFFFFF");
+				square = new Square(95, 90, 10, 10, "#00FF00");
+				blocks = [
+					new Block(20, 85, 15, 15, "#000000"),
+					new Block(50, 75, 10, 10, "#000000"),
+					new Block(120, 92, 5, 5, "#000000"),
+					new Block(150, 80, 10, 10, "#000000")
+					];
+			}
+			
+			function update(timeDifference) {
+				square.moveX(timeDifference);
+				square.moveY(timeDifference);
+			}
+			
+			function draw() {
+				background.draw();
+				for(var i = 0; i < blocks.length; i++) {
+					blocks[i].draw();
+				}
+				square.draw();
+			}
+			
+			function loop(timestamp) {
+				var timeDifference = timestamp - lastRender
+				
+				update(timeDifference);
+				draw();
+				
+				lastRender = timestamp;
+				window.requestAnimationFrame(loop);
+			}
+			
+			init();
+			var lastRender = 0;
+			window.requestAnimationFrame(loop)
+			
+			document.addEventListener('keydown', handleKeyDown);
+			document.addEventListener('keyup', handleKeyUp);
+			
+			function handleKeyDown(e) {
+				if(e.keyCode === 37) { // Left arrow
+					square.setDirection(Direction.LEFT);
+				} else if(e.keyCode === 39) { // Right arrow
+					square.setDirection(Direction.RIGHT);
+				} else if(e.keyCode === 38) {
+					square.jump(); // Up arrow
+				}
+			}
+			
+			function handleKeyUp(e) {
+				if(e.keyCode === 37) { // Left arrow
+					square.unsetDirection(Direction.LEFT);
+				} else if(e.keyCode === 39) { // Right arrow
+					square.unsetDirection(Direction.RIGHT);
+				}
+			}
+			
+		</script>
+	</body>
+</html>
