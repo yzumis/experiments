@@ -56,6 +56,20 @@
 					return x > minX && x < maxX;
 				}
 				
+				withinRectangle(minX, minY, maxX, maxY) {
+					var withinX = this.withinX(minX, maxX);
+					var withinY = this.withinY(minY, maxY);
+					return withinX && withinY;
+				}
+				
+				withinX(minX, maxX) {
+					return maxX > this.x && minX < this.x + this.xSize;
+				}
+				
+				withinY(minY, maxY) {
+					return maxY > this.y && minY < this.y + this.ySize;
+				}
+				
 			}
 			
 			class Square {
@@ -82,7 +96,7 @@
 			
 				moveX(timeDifference) {
 					var futureX = this.x + this.xVelocity * timeDifference / 1000;
-					var collision = this.calculateXBlocksCollisitions(this.x, futureX);
+					var collision = this.calculateXBlocksCollisitions(futureX);
 					if(collision !== -1) {
 						futureX = collision;
 					}
@@ -95,37 +109,48 @@
 					}
 				}
 				
-				calculateXBlocksCollisitions(x, futureX) {
-					var collision = -1;
+				calculateXBlocksCollisitions(futureX) {
+					var blocksWithCollisition =[];
 					for(var i = 0; i < blocks.length; i++) {
-						var iBlockCollisition = this.calculateXBlockCollisition(blocks[i], x, futureX);
-						if(iBlockCollisition !== -1) {
-							if(futureX > x) {
-								if(iBlockCollisition < collision || collision === -1) {
-									collision = iBlockCollisition;
-								}
-							} else if(futureX < x) {
-								if(iBlockCollisition > collision || collision === -1) {
-									collision = iBlockCollisition;
-								}
+						if(this.x < futureX) {
+							if(blocks[i].withinRectangle(this.x, this.y, futureX + this.xSize, this.y + this.ySize)) {
+								blocksWithCollisition.push(blocks[i]);
+							}
+						} else if (this.x > futureX) {
+							if(blocks[i].withinRectangle(futureX, this.y, this.x + this.xSize, this.y + this.ySize)) {
+								blocksWithCollisition.push(blocks[i]);
 							}
 						}
 					}
-					return collision;
-				}
-				
-				calculateXBlockCollisition(block, x, futureX) {
-					var collision = -1;
-					if(futureX > x) {
-						if(block.inside(futureX + this.xSize, this.y) || block.inside(futureX + this.xSize, this.y + this.ySize)) {
-							collision = block.getX() - this.xSize;
-						}
-					} else if(futureX < x) {
-						if(block.inside(futureX, this.y) || block.inside(futureX, this.y + this.ySize)) {
-							collision = block.getX() + block.getXSize();
+					var ret = -1;
+					if(blocksWithCollisition.length > 0) {
+						if(this.x < futureX) {
+							ret = this.calculateMinimumX(blocksWithCollisition) - this.xSize;
+						} else if(this.x > futureX) {
+							ret = this.calculateMaximumX(blocksWithCollisition);
 						}
 					}
-					return collision;
+					return ret;
+				}
+				
+				calculateMinimumX(blocks) {
+					var ret = Number.POSITIVE_INFINITY;
+					for(var i = 0; i < blocks.length; i++) {
+						if(blocks[i].getX() < ret) {
+							ret = blocks[i].getX();
+						}
+					}
+					return ret;
+				}
+				
+				calculateMaximumX(blocks) {
+					var ret = Number.NEGATIVE_INFINITY;
+					for(var i = 0; i < blocks.length; i++) {
+						if(blocks[i].getX() + blocks[i].getXSize() > ret) {
+							ret = blocks[i].getX() + blocks[i].getXSize();
+						}
+					}
+					return ret;
 				}
 				
 				setXVelocity(xVelocity) {
@@ -149,7 +174,27 @@
 				}
 				
 				jump() {
-					this.yVelocity = -1000;
+					if(this.inTheGround() || this.overAnyBlock()) {
+						this.yVelocity = -1000;
+					}
+				}
+				
+				inTheGround() {
+					return this.y + this.ySize == 100;
+				}
+				
+				overAnyBlock() {
+					var ret = false;
+					for(var i = 0; i < blocks.length; i++) {
+						if(this.overBlock(blocks[i])) {
+							ret = true;
+						}
+					}
+					return ret;
+				}
+				
+				overBlock(block) {
+					return this.y + this.ySize == block.getY();
 				}
 				
 				moveY(timeDifference) {
@@ -159,8 +204,8 @@
 					} else {
 						effectiveGravity = 0;
 					}
-					var futureY = this.y + (timeDifference / 1000) * this.yVelocity + (timeDifference / 1000) * effectiveGravity * effectiveGravity;
-					var collision = this.calculateYBlocksCollisitions(this.y, futureY);
+					var futureY = this.y + (timeDifference / 1000) * this.yVelocity + (timeDifference / 1000) * this.gravity * this.gravity;
+					var collision = this.calculateYBlocksCollisitions(futureY);
 					if(collision !== -1) {
 						futureY = collision;
 					}
@@ -175,37 +220,48 @@
 					this.yVelocity = futureYVelocity;
 				}
 				
-				calculateYBlocksCollisitions(y, futureY) {
-					var collision = -1;
+				calculateYBlocksCollisitions(futureY) {
+					var blocksWithCollisition =[];
 					for(var i = 0; i < blocks.length; i++) {
-						var iBlockCollisition = this.calculateYBlockCollisition(blocks[i], y, futureY);
-						if(iBlockCollisition !== -1) {
-							if(futureY > y) {
-								if(iBlockCollisition < collision || collision === -1) {
-									collision = iBlockCollisition;
-								}
-							} else if(futureY < y) {
-								if(iBlockCollisition > collision || collision === -1) {
-									collision = iBlockCollisition;
-								}
+						if(this.y < futureY) {
+							if(blocks[i].withinRectangle(this.x, this.y, this.x + this.xSize, futureY + this.ySize)) {
+								blocksWithCollisition.push(blocks[i]);
+							}
+						} else if (this.y > futureY) {
+							if(blocks[i].withinRectangle(this.x, futureY, this.x + this.xSize, this.y + this.ySize)) {
+								blocksWithCollisition.push(blocks[i]);
 							}
 						}
 					}
-					return collision;
-				}
-				
-				calculateYBlockCollisition(block, y, futureY) {
-					var collision = -1;
-					if(futureY > y) {
-						if(block.inside(this.x, futureY + this.ySize) || block.inside(this.x + this.xSize, futureY + this.ySize)) {
-							collision = block.getY() - this.ySize;
-						}
-					} else if(futureY < y) {
-						if(block.inside(this.x, futureY) || block.inside(this.x + this.xSize, futureY)) {
-							collision = block.getY() + block.getYSize();
+					var ret = -1;
+					if(blocksWithCollisition.length > 0) {
+						if(this.y < futureY) {
+							ret = this.calculateMinimumY(blocksWithCollisition) - this.ySize;
+						} else if(this.y > futureY) {
+							ret = this.calculateMaximumY(blocksWithCollisition);
 						}
 					}
-					return collision;
+					return ret;
+				}
+				
+				calculateMinimumY(blocks) {
+					var ret = Number.POSITIVE_INFINITY;
+					for(var i = 0; i < blocks.length; i++) {
+						if(blocks[i].getY() < ret) {
+							ret = blocks[i].getY();
+						}
+					}
+					return ret;
+				}
+				
+				calculateMaximumY(blocks) {
+					var ret = Number.NEGATIVE_INFINITY;
+					for(var i = 0; i < blocks.length; i++) {
+						if(blocks[i].getY() + blocks[i].getYSize() > ret) {
+							ret = blocks[i].getY() + blocks[i].getYSize();
+						}
+					}
+					return ret;
 				}
 				
 			}
@@ -220,8 +276,14 @@
 				blocks = [
 					new Block(20, 85, 15, 15, "#000000"),
 					new Block(50, 75, 10, 10, "#000000"),
-					new Block(120, 92, 5, 5, "#000000"),
-					new Block(150, 80, 10, 10, "#000000")
+					new Block(110, 92, 5, 5, "#000000"),
+					new Block(130, 80, 10, 10, "#000000"),
+					new Block(140, 70, 10, 10, "#000000"),
+					new Block(150, 60, 10, 10, "#000000"),
+					new Block(160, 50, 10, 10, "#000000"),
+					new Block(170, 40, 10, 10, "#000000"),
+					new Block(180, 30, 10, 10, "#000000"),
+					new Block(190, 20, 10, 10, "#000000")
 					];
 			}
 			
