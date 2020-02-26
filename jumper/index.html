@@ -301,7 +301,7 @@
 			}
 			
 			function loop(timestamp) {
-				var timeDifference = timestamp - lastRender
+				var timeDifference = timestamp - lastRender;
 				
 				update(timeDifference);
 				draw();
@@ -312,7 +312,7 @@
 			
 			init();
 			var lastRender = 0;
-			window.requestAnimationFrame(loop)
+			window.requestAnimationFrame(loop);
 			
 			document.addEventListener('keydown', handleKeyDown);
 			document.addEventListener('keyup', handleKeyUp);
