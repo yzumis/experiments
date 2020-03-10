@@ -1,0 +1,279 @@
+<html>
+	<head>
+	</head>
+	<body>
+		<canvas id="myCanvas" width="200" height="100" style="border:1px solid #000000;">
+		</canvas>
+		<video id="myVideo" autoplay="true" hidden="true">
+		</video>
+		<script>
+			
+			var canvas = document.getElementById("myCanvas");
+			var context = canvas.getContext("2d");
+			var video = document.getElementById("myVideo");
+			var imageCache;
+			
+			var numberOfBlocks = 25;
+			var blockSize = 4;
+			
+			class Block {
+				constructor(x, y, xSize, ySize, color) {
+					this.x = x;
+					this.y = y;
+					this.xSize = xSize;
+					this.ySize = ySize;
+					this.color = color;
+					this.rgbColor = this.hexToRgb(this.color);
+				}
+
+				draw() {
+					var oldFillStyle = context.fillStyle;
+					context.fillStyle = this.color;
+					context.fillRect(this.x, this.y, this.xSize, this.ySize);
+					context.fillStyle = oldFillStyle;
+				}
+				
+				getX() {
+					return this.x;
+				}
+				
+				getXSize() {
+					return this.xSize;
+				}
+				
+				getY() {
+					return this.y;
+				}
+				
+				getYSize() {
+					return this.ySize;
+				}
+				
+				getColor() {
+					return this.color;
+				}
+				
+				getRGBColor() {
+					return this.rgbColor;
+				}
+				
+				hexToRgb(hex) {
+					var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+					return {
+						red: parseInt(result[1], 16),
+						green: parseInt(result[2], 16),
+						blue: parseInt(result[3], 16)
+					};
+				}
+				
+			}
+			
+			class Individual {
+				
+				constructor(blocks) {
+					if (blocks === undefined) {
+						this.fitness = 0;
+						this.blocks = this.generateRandomBlocks();
+					} else {
+						this.fitness = 0;
+						this.blocks = blocks;
+					}
+				}
+				
+				generateRandomBlocks() {
+					var ret = [];
+					for(var i = 0; i < numberOfBlocks; i++) {
+						var retI = [];
+						for(var j = 0; j < numberOfBlocks; j++) {
+							var block = this.generateRandomBlock(i, j);
+							retI.push(block);
+						}
+						ret.push(retI);
+					}
+					return ret;
+				}
+				
+				generateRandomBlock(i, j) {
+					var color = this.generateRandomColor();
+					return new Block(100 + (i * blockSize), (j * blockSize), blockSize, blockSize, color);
+				}
+				
+				generateRandomColor() {
+					var letters = '0123456789ABCDEF';
+					var ret = '#';
+					for (var i = 0; i < 6; i++) {
+						ret += letters[Math.floor(Math.random() * 16)];
+					}
+					return ret;
+				}
+				
+				reproduce(individual, mutationRate) {
+					var childBlocks = [];
+					for(var i = 0; i < numberOfBlocks; i++) {
+						var childBlocksI = []
+						for(var j = 0; j < numberOfBlocks; j++) {
+							if(Math.random() <= mutationRate) {
+								var randomBlock = this.generateRandomBlock(i, j); 
+								childBlocksI.push(randomBlock);
+							} else {
+								if(Math.random() < 0.5) {
+									childBlocksI.push(this.blocks[i][j]);
+								} else {
+									childBlocksI.push(individual.getBlock(i, j));
+								}
+							}
+						}
+						childBlocks.push(childBlocksI);
+					}
+					return new Individual(childBlocks);
+				}
+				
+				getBlock(i, j) {
+					return this.blocks[i][j];
+				}
+				
+				calculateFitness() {
+					this.fitness = 0;
+					for(var i = 0; i < 100; i++) {
+						for(var j = 0; j < 100; j++) {
+							if(imageCache !== undefined && imageCache[i] !== undefined && imageCache[i][j] !== undefined) {
+								var imageData = imageCache[i][j];	
+								var red = imageData.data[0]; // Values [0, 255]
+								var green = imageData.data[1];
+								var blue = imageData.data[2];
+								var column = Math.floor(i / blockSize);
+								var row = Math.floor(j / blockSize);
+								var block = this.blocks[column][row];
+								var rgbBlockColor = block.getRGBColor();
+								var redFitness = 255 - Math.abs(red - rgbBlockColor.red);
+								var greenFitness = 255 - Math.abs(green - rgbBlockColor.green);
+								var blueFitness = 255 - Math.abs(blue - rgbBlockColor.blue);
+								this.fitness += redFitness + greenFitness + blueFitness;
+							}
+						}
+					}
+				}
+				
+				
+				getFitness() {
+					return this.fitness;
+				}
+				
+				draw() {
+					for(var i = 0; i < numberOfBlocks; i++) {
+						for(var j = 0; j < numberOfBlocks; j++) {
+							this.blocks[i][j].draw();
+						}
+					}
+				}
+				
+			}
+			
+			class Population {
+			
+				constructor(populationSize, mutationRate) {
+					this.populationSize = populationSize;
+					this.mutationRate = mutationRate;
+					this.individuals = this.initializeIndividualsRandomly();
+
+				}
+				
+				initializeIndividualsRandomly() {
+					var ret = [];
+					for(var i = 0; i < this.populationSize; i++) {
+						var individual = new Individual();
+						ret.push(individual);
+					}
+					return ret;
+				}
+			
+				calculateFitness() {
+					for(var i = 0; i < this.populationSize; i++) {
+						this.individuals[i].calculateFitness();
+					}
+				}
+				
+				reproduce() {
+					var childIndividuals = [];
+					for(var i = 0; i < this.populationSize; i++) {
+						var individualParentA = this.getBestIndividual();
+						var individualParentB = this.getRandomIndividual();
+						var childIndividual = individualParentA.reproduce(individualParentB, this.mutationRate); 
+						childIndividuals.push(childIndividual);
+					}
+					this.individuals = childIndividuals;
+				}
+				
+				getBestIndividual() {
+					var bestIndividualIndex = -1;
+					for(var i = 0; i < this.populationSize; i++) {
+						if(bestIndividualIndex === -1 || this.individuals[i].getFitness() >= this.individuals[bestIndividualIndex].getFitness()) {
+							bestIndividualIndex = i;
+						}
+					}
+					return this.individuals[bestIndividualIndex];
+				}
+				
+				getRandomIndividual() {
+					var randomIndex = this.randomIntegerFromInterval(0, this.populationSize - 1);
+					return this.individuals[randomIndex];
+				}
+				
+				randomIntegerFromInterval(minimumIncluded, maximumIncluded) {
+					return Math.floor(Math.random() * (maximumIncluded - minimumIncluded + 1) + minimumIncluded);
+				}
+				
+			}
+			
+			var population;
+			
+			function init() {
+				initVideo();
+				const populationSize = 20;
+				const mutationRate = 0.005;
+				population = new Population(populationSize, mutationRate);
+			}
+			
+			function initVideo() {
+				if (navigator.mediaDevices.getUserMedia) {
+					navigator.mediaDevices.getUserMedia(
+						{
+							video: true
+						}
+					).then(
+						function (stream) {
+							video.srcObject = stream;
+						}
+					).catch(
+						function (err) {
+							console.log("Something went wrong!");
+						}
+					);
+				}
+			}
+			
+			function loop() {
+				context.drawImage(video, 0, 0, 100, 100);
+				imageCache = [];
+				for(var i = 0; i < 100; i++) {
+					imageCacheI = [];
+					for(var j = 0; j < 100; j++) {
+						var imageData = context.getImageData(i, j, 1, 1);
+						imageCacheI.push(imageData);
+					}
+					imageCache.push(imageCacheI);
+				}
+				
+				population.calculateFitness();
+				var bestIndividual = population.getBestIndividual();
+				bestIndividual.draw();
+				population.reproduce();
+				window.requestAnimationFrame(loop);
+			}
+			
+			init();
+			window.requestAnimationFrame(loop);
+			
+		</script>
+	<body>
+</html>
