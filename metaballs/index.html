@@ -2,10 +2,10 @@
 	<head>
 	</head>
 	<body>
-		<canvas id="worldCanvas" width="500" height="500"></canvas>
+		<canvas id="worldCanvas" width="200" height="200"></canvas>
 		<script>
-			const WORLD_SIZE_X = 500;
-			const WORLD_SIZE_Y = 500;
+			const WORLD_SIZE_X = 200;
+			const WORLD_SIZE_Y = 200;
 			const NUMBER_OF_PARTICLES = 20;
 			
 			class IntensityMatrix {
@@ -203,7 +203,7 @@
 			};
 			
 			function drawBackground(context) {
-				drawRectangle(context, 'black', 0, 0, WORLD_SIZE_X, WORLD_SIZE_Y);
+				drawRectangle(context, 'white', 0, 0, WORLD_SIZE_X, WORLD_SIZE_Y);
 			};
 			
 			function drawRectangle(context, color, x, y, xSize, ySize) {
