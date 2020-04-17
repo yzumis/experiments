@@ -1,0 +1,220 @@
+<html>
+	<head>
+	</head>
+	<body>
+		<canvas id="worldCanvas" width="500" height="500"></canvas>
+		<script>
+			const WORLD_SIZE_X = 500;
+			const WORLD_SIZE_Y = 500;
+			const NUMBER_OF_PARTICLES = 20;
+			
+			class IntensityMatrix {
+				
+				constructor() {
+					this.reset();
+				};
+				
+				reset() {
+					this.matrix = this.initializeEmptyMatrix();
+				};
+				
+				initializeEmptyMatrix() {
+					var ret = [];
+					for(var i = 0; i < WORLD_SIZE_X; i++) {
+						var matrixVector = [];
+						for(var j = 0; j < WORLD_SIZE_Y; j++) {
+							matrixVector.push(0.0);
+						}
+						ret.push(matrixVector);
+					}
+					return ret;
+				};
+				
+				update(x, y) {
+					for(var i = 0; i < WORLD_SIZE_X; i++) {
+						for(var j = 0; j < WORLD_SIZE_Y; j++) {
+							var distanceToCurrentPoint = this.distance(x, y, i, j);
+							if(distanceToCurrentPoint < 10) {
+								this.matrix[i][j] += 10 - distanceToCurrentPoint;
+								if(this.matrix[i][j] > 10) {
+									this.matrix[i][j] = 10;
+								}
+							}
+						}
+					}
+				};
+				
+				distance(x1, y1, x2, y2) {
+					var a = x1 - x2;
+					var b = y1 - y2;
+					return Math.sqrt(a*a + b*b);
+				};
+				
+				draw(context) {
+					for(var i = 0; i < this.matrix.length; i++) {
+						for(var j = 0; j < this.matrix[i].length; j++) {
+							if(this.matrix[i][j] > 5) {
+								this.drawRectangle(context, 'blue', i, j, 1, 1);
+							}
+						}
+					}
+				};
+				
+				getMaximumIntensity() {
+					var ret = 0;
+					for(var i = 0; i < this.matrix.length; i++) {
+						for(var j = 0; j < this.matrix[i].length; j++) {
+							if(this.matrix[i][j] > ret) {
+								ret = this.matrix[i][j];
+							}
+						}
+					}
+					return ret;
+				};
+				
+				rgbToHex(red, green, blue) {
+					return "#" + this.componentToHex(red) + this.componentToHex(green) + this.componentToHex(blue);
+				};
+				
+				componentToHex(component) {
+					var hex = component.toString(16);
+					return hex.length == 1 ? "0" + hex : hex;
+				};
+				
+				drawRectangle(context, color, x, y, xSize, ySize) {
+					context.beginPath();
+					context.rect(x, y, xSize, ySize);
+					context.fillStyle = color;
+					context.fill();
+					context.lineWidth = 1;
+					context.strokeStyle = color;
+					context.stroke();
+				};
+				
+			}
+			
+			
+			class Particle {
+			
+				constructor(x, y) {
+					this.x = x;
+					this.y = y;
+					this.directionAngle = Math.random() * 2 * Math.PI;
+				};
+				
+				move() {
+					this.changeDirectionAngle();
+					this.changePosition();
+				};
+				
+				changeDirectionAngle() {
+					this.directionAngle += this.randomInteger(-1, 1);
+					if(this.directionAngle < 0) {
+						this.directionAngle = 2 * Math.PI - this.directionAngle;
+					}
+					if(this.directionAngle > 2 * Math.PI) {
+						this.directionAngle -= 2 * Math.PI;
+					}
+				};
+				
+				randomInteger(min, max) { // min max are Included
+					return Math.floor(Math.random() * (max - min + 1) ) + min;
+				};
+				
+				changePosition() {
+					this.x+= Math.cos(this.directionAngle);
+					this.y+= Math.sin(this.directionAngle);
+					
+					if(this.x < 0) {
+						this.x = 0;
+					}
+					if(this.y < 0) {
+						this.y = 0;
+					}
+					if(this.x > WORLD_SIZE_X) {
+						this.x = WORLD_SIZE_X;
+					}
+					if(this.y > WORLD_SIZE_Y) {
+						this.y = WORLD_SIZE_Y;
+					}
+				};
+				
+				getX() {
+					return this.x;
+				};
+				
+				getY() {
+					return this.y;
+				};
+				
+				draw(context) {
+					this.drawRectangle(context, 'yellow', this.x, this.y, 1, 1);
+				}
+				
+				drawRectangle(context, color, x, y, xSize, ySize) {
+					context.beginPath();
+					context.rect(x, y, xSize, ySize);
+					context.fillStyle = color;
+					context.fill();
+					context.lineWidth = 1;
+					context.strokeStyle = color;
+					context.stroke();
+				};
+				
+			};
+			
+			var intensityMatrix;
+			var particles;
+			initialize();
+			window.requestAnimationFrame(play);
+			
+			function initialize() {
+				intensityMatrix = new IntensityMatrix();
+				particles = [];
+				for(var i = 0; i < NUMBER_OF_PARTICLES; i++) {
+					particles.push(new Particle(WORLD_SIZE_X / 2, WORLD_SIZE_Y / 2));
+				}
+			};
+			
+			function play() {
+				draw();
+				update();
+				window.requestAnimationFrame(play);
+			};
+			
+			function update() {
+				for(var i = 0; i < particles.length; i++) {
+					particles[i].move();
+				}
+				intensityMatrix.reset();
+				for(var i = 0; i < particles.length; i++) {
+					intensityMatrix.update(particles[i].getX(), particles[i].getY());
+				}
+			};
+			
+			function draw() {
+				var canvas = document.getElementById('worldCanvas');
+				var context = canvas.getContext('2d');
+				drawBackground(context);
+				intensityMatrix.draw(context);
+				for(var i = 0; i < particles.length; i++) {
+					// particles[i].draw(context);
+				}
+			};
+			
+			function drawBackground(context) {
+				drawRectangle(context, 'black', 0, 0, WORLD_SIZE_X, WORLD_SIZE_Y);
+			};
+			
+			function drawRectangle(context, color, x, y, xSize, ySize) {
+				context.beginPath();
+				context.rect(x, y, xSize, ySize);
+				context.fillStyle = color;
+				context.fill();
+				context.lineWidth = 1;
+				context.strokeStyle = color;
+				context.stroke();
+			};
+		</script>
+	</body>
+</html>
