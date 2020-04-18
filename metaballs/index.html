@@ -6,7 +6,7 @@
 		<script>
 			const WORLD_SIZE_X = 200;
 			const WORLD_SIZE_Y = 200;
-			const NUMBER_OF_PARTICLES = 20;
+			const NUMBER_OF_PARTICLES = 50;
 			
 			class IntensityMatrix {
 				
@@ -95,7 +95,6 @@
 			
 			
 			class Particle {
-			
 				constructor(x, y) {
 					this.x = x;
 					this.y = y;
@@ -163,6 +162,14 @@
 				
 			};
 			
+			var offscreenCanvas = document.createElement('canvas');
+			offscreenCanvas.width = 500;
+			offscreenCanvas.height = 500;
+			var offscreenContext = offscreenCanvas.getContext('2d');
+			
+			var canvas = document.getElementById('worldCanvas');
+			var context = canvas.getContext('2d');
+			
 			var intensityMatrix;
 			var particles;
 			initialize();
@@ -193,13 +200,12 @@
 			};
 			
 			function draw() {
-				var canvas = document.getElementById('worldCanvas');
-				var context = canvas.getContext('2d');
-				drawBackground(context);
-				intensityMatrix.draw(context);
+				drawBackground(offscreenContext);
+				intensityMatrix.draw(offscreenContext);
 				for(var i = 0; i < particles.length; i++) {
 					// particles[i].draw(context);
 				}
+				context.drawImage(offscreenCanvas, 0, 0);
 			};
 			
 			function drawBackground(context) {
