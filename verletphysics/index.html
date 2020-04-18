@@ -1,0 +1,205 @@
+<html>
+	<head>
+	</head>
+	<body>
+		<canvas id="worldCanvas" width="500" height="500"></canvas>
+		<script>
+			const WORLD_SIZE_X = 500;
+			const WORLD_SIZE_Y = 500;
+			
+			class Vector2D {
+				
+				constructor(x, y) {
+					this.x = x;
+					this.y = y;
+				};
+				
+				substract(vector2D) {
+					return new Vector2D(this.x - vector2D.x, this.y - vector2D.y);
+				};
+				
+				add(vector2D) {
+					return new Vector2D(this.x + vector2D.x, this.y + vector2D.y);
+				}
+				
+				multiply(value) {
+					this.x = value * this.x;
+					this.y = value * this.y;
+				};
+				
+				magSq() {
+					return this.x * this.x + this.y * this.y;
+				};
+				
+				mag() {
+					return Math.sqrt(this.x * this.x + this.y * this.y);
+				};
+				
+				distance(vector2D) {
+					var distanceX = this.x - vector2D.x;
+					var distanceY = this.y - vector2D.y;
+					return Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+				};
+			
+			}
+			
+			class Dot {
+			
+				constructor(x, y, pinned) {
+					this.currentPosition = new Vector2D(x, y);
+					this.oldPosition = new Vector2D(x, y);
+					
+					this.friction = 0.97;
+					this.groundFriction = 0.7;
+					this.gravity = new Vector2D(0, 1);
+					
+					this.radius = 5;
+					this.color = 'red';
+					this.mass = 1;
+					if(!pinned) {
+						this.pinned = false;
+					} else {
+						this.pinner = pinned;
+					}
+				};
+				
+				update() {
+					var velocity = this.currentPosition.substract(this.oldPosition);
+					velocity.multiply(this.friction);
+					
+					if (this.currentPosition.y >= WORLD_SIZE_Y - this.radius && velocity.magSq() > 0.000001) {
+						var mag = velocity.mag();
+						velocity.x /= mag;
+						velocity.y /= mag;
+						velocity.multiply(mag * this.groundFriction);
+					}
+					this.oldPosition = new Vector2D(this.currentPosition.x, this.currentPosition.y);
+					this.currentPosition = this.currentPosition.add(velocity);
+					this.currentPosition = this.currentPosition.add(this.gravity);
+					this.constrain();
+				};
+				
+				constrain() {
+					if (this.currentPosition.x > WORLD_SIZE_X - this.radius) {
+						this.currentPosition.x = WORLD_SIZE_X - this.radius;
+					}
+					if (this.currentPosition.x < this.radius) {
+						this.currentPosition.x = this.radius;
+					}
+					if (this.currentPosition.y > WORLD_SIZE_Y - this.radius) {
+						this.currentPosition.y = WORLD_SIZE_Y - this.radius;
+					}
+					if (this.currentPosition.y < this.radius) {
+						this.currentPosition.y = this.radius;
+					}
+				};
+				
+				draw(context) {
+					context.beginPath();
+					context.fillStyle = this.color;
+					context.arc(this.currentPosition.x, this.currentPosition.y, this.radius, 0, Math.PI * 2);
+					context.fill();
+					context.closePath();
+				};
+				
+			};
+			
+			class Stick {
+			
+				constructor(startDot, endDot, length) {
+					this.startDot = startDot;
+					this.endDot = endDot;
+					this.stiffness = 2;
+					this.color = 'yellow';
+					// if the length is not given then calculate the distance based on position
+					if (!length) {
+						this.length = this.startDot.currentPosition.distance(this.endDot.currentPosition);
+					} else {
+						this.length = length;
+					}
+				};
+				
+				update() {
+					let distanceX = this.endDot.currentPosition.x - this.startDot.currentPosition.x;
+					let distanceY = this.endDot.currentPosition.y - this.startDot.currentPosition.y;
+					// pythagoras theorem
+					let distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+					// calculate the resting distance betwen the dots
+					let difference = (this.length - distance) / distance * this.stiffness;
+
+					// getting the offset of the points
+					let offsetX = distanceX * difference * 0.5;
+					let offsetY = distanceY * difference * 0.5;
+
+					// calculate mass
+					let m1 = this.startDot.mass + this.endDot.mass;
+					let m2 = this.startDot.mass / m1;
+					m1 = this.endDot.mass / m1;
+
+					// and finally apply the offset with calculated mass
+					if (!this.startDot.pinned) {
+						this.startDot.currentPosition.x -= offsetX * m1;
+						this.startDot.currentPosition.y -= offsetY * m1;
+					}
+					if (!this.endDot.pinned) {
+						this.endDot.currentPosition.x += offsetX * m2;
+						this.endDot.currentPosition.y += offsetY * m2;
+					}
+				};
+				
+				
+				draw(context) {
+					context.beginPath();
+					context.strokeStyle = this.color;
+					context.moveTo(this.startDot.currentPosition.x, this.startDot.currentPosition.y);
+					context.lineTo(this.endDot.currentPosition.x, this.endDot.currentPosition.y);
+					context.stroke();
+					context.closePath();
+				};
+
+			};
+			
+			
+			var canvas = document.getElementById("worldCanvas");
+			var context = canvas.getContext("2d");
+			
+			var dots;
+			var sticks;
+			
+			function initialize() {
+				dots = [];
+				sticks = [];
+				// forming a BOX
+				dots.push(new Dot(100, 100, (Math.random() - 0.5) * 100.0)); // x, y, vx, vy
+				dots.push(new Dot(200, 100));
+				dots.push(new Dot(200, 200));
+				dots.push(new Dot(100, 300));
+				// sticks
+				sticks.push(new Stick(dots[0], dots[1]))
+				sticks.push(new Stick(dots[1], dots[2]))
+				sticks.push(new Stick(dots[2], dots[3]))
+				sticks.push(new Stick(dots[3], dots[0]))
+				sticks.push(new Stick(dots[1], dots[3]))
+				sticks.push(new Stick(dots[0], dots[2]))
+			}
+
+			function play() {
+				context.clearRect(0, 0, WORLD_SIZE_X, WORLD_SIZE_Y);
+
+				for (var dot of dots) {
+					dot.update();
+					dot.draw(context);
+				}
+				for (var stick of sticks) {
+					stick.update();
+					stick.draw(context);
+				}
+				requestAnimationFrame(play);
+			}
+			
+			initialize();
+			play();
+			
+		</script>
+	</body>
+</html>
