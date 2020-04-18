@@ -221,6 +221,49 @@
 			initialize();
 			play();
 			
+			var closestDot;
+			
+			canvas.addEventListener(
+				'mousedown',
+				e => {
+					var closestDotDistance = Infinity;
+					var mouseVector = new Vector2D(e.clientX, e.clientY);
+					for(var i = 0; i < 20; i++) {
+						for (var j = 0; j < 20; j++) {
+							var distance = mouseVector.distance(dotsMatrix[i][j].currentPosition);
+							if(distance < closestDotDistance) {
+								closestDot = dotsMatrix[i][j];
+								closestDotDistance = distance; 
+							}
+						}
+					}
+					closestDot.selected = true;
+					closestDot.pinned = true;
+				}
+			);
+
+			canvas.addEventListener(
+				'mousemove',
+				e => {
+					if(closestDot) {
+						closestDot.currentPosition.x = e.clientX;
+						closestDot.currentPosition.y = e.clientY;
+						closestDot.oldPosition.x = e.clientX;
+						closestDot.oldPosition.y = e.clientY;
+					}
+				}
+			);
+
+			canvas.addEventListener(
+				'mouseup',
+				e => {
+					if(closestDot) {
+						closestDot.selected = false;
+						closestDot.pinned = false;
+					}
+				}
+			);
+			
 		</script>
 	</body>
 </html>
