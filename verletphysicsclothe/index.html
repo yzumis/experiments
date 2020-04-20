@@ -76,7 +76,6 @@
 					this.oldPosition = new Vector2D(this.currentPosition.x, this.currentPosition.y);
 					this.currentPosition = this.currentPosition.add(velocity);
 					this.currentPosition = this.currentPosition.add(this.gravity);
-					this.constrain();
 				};
 				
 				constrain() {
@@ -189,17 +188,11 @@
 						if(j < 19) {
 							sticks.push(new Stick(dotsMatrix[i][j], dotsMatrix[i][j + 1]));
 						}
-						
-						if(i > 0) {
-							sticks.push(new Stick(dotsMatrix[i][j], dotsMatrix[i - 1][j]));
-						}
-						if(j > 0) {
-							sticks.push(new Stick(dotsMatrix[i][j], dotsMatrix[i][j - 1]));
-						}
 					}
 				}
 			}
-
+			
+			
 			function play() {
 				context.clearRect(0, 0, WORLD_SIZE_X, WORLD_SIZE_Y);
 
@@ -208,13 +201,31 @@
 						if(!dot.pinned) {
 							dot.update();
 						}
+					}
+				}
+				
+				for(var i = 0; i < 5; i++) {
+					for (var dotsVector of dotsMatrix) {
+						for(var dot of dotsVector) {
+							dot.constrain();
+						}
+					}
+					
+					for (var stick of sticks) {
+						stick.update();
+					}
+				}
+				
+				for (var stick of sticks) {
+					stick.draw(context);
+				}
+				
+				for (var dotsVector of dotsMatrix) {
+					for(var dot of dotsVector) {
 						dot.draw(context);
 					}
 				}
-				for (var stick of sticks) {
-					stick.update();
-					stick.draw(context);
-				}
+				
 				requestAnimationFrame(play);
 			}
 			
