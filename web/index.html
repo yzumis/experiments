@@ -3,6 +3,31 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+		<style type="text/css">
+     			/* Set the size of the div element that contains the map */
+     			#map {
+       				height: 400px;
+       				/* The height is 400 pixels */
+       				width: 100%;
+       				/* The width is the width of the web page */
+     			}
+   		</style>
+		<script>
+			function initMap() {
+				// The location of Uluru
+				const uluru = { lat: -25.344, lng: 131.036 };
+				// The map, centered at Uluru
+				const map = new google.maps.Map(document.getElementById("map"), {
+					zoom: 4,
+					center: uluru,
+				});
+				// The marker, positioned at Uluru
+				const marker = new google.maps.Marker({
+					position: uluru,
+					map: map,
+				});
+			}
+		</script>
 	</head>
 	<body>
 		<ul class="nav nav-tabs">
@@ -32,22 +57,6 @@
 				<div id="map"></div>
 			</div>
 		</div>
-		<script>
-			function initMap() {
-				// The location of Uluru
-				const uluru = { lat: -25.344, lng: 131.036 };
-				// The map, centered at Uluru
-				const map = new google.maps.Map(document.getElementById("map"), {
-					zoom: 4,
-					center: uluru,
-				});
-				// The marker, positioned at Uluru
-				const marker = new google.maps.Marker({
-					position: uluru,
-					map: map,
-				});
-			}
-		</script>
 		<script
 			src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDfH57Rwq0FIXdH7iDszJgtrh41b55rexE&callback=initMap&libraries=&v=weekly"
 			async
