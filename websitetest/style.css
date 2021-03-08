@@ -16,12 +16,23 @@ html {
     margin-left: 10%;
     margin-right: 10%;
 }
-.name {
-    font-size: 3vw;
-    border-bottom: 3px;
-    border-bottom-color: var(--other-color);
-    border-bottom-style: solid;
+@media only screen and (max-width: 599px) {
+    .name {
+        font-size: 3vw;
+        border-bottom: 3px;
+        border-bottom-color: var(--other-color);
+        border-bottom-style: solid;
+    }
 }
+@media only screen and (min-width: 600px) {
+    .name {
+        font-size: 8vw;
+        border-bottom: 3px;
+        border-bottom-color: var(--other-color);
+        border-bottom-style: solid;
+    }
+}
+
 .red {
     color: var(--other-color);
 }
