@@ -1,1 +1,51 @@
 
+:root {
+    --back-color: black;
+    --element-color: white;
+    --other-color: #f9d10f;
+  }
+
+html {
+    height: 100%;
+    margin: 0;
+    background-color: var(--back-color);
+    color: var(--element-color);
+    font-size: 1.3vw;
+}
+.main {
+    margin-left: 10%;
+    margin-right: 10%;
+}
+.name {
+    font-size: 3vw;
+    border-bottom: 3px;
+    border-bottom-color: var(--other-color);
+    border-bottom-style: solid;
+}
+.red {
+    color: var(--other-color);
+}
+.category {
+    width: 100%;
+    text-decoration: none;
+    color: var(--element-color);
+    display: block;
+    font-size: 2vw;
+}
+.list {
+    padding: 0;
+}
+.link {
+    margin-left: 10%;
+    display: inline-block;
+}
+.link:hover {
+    border-bottom: 1px;
+    border-bottom-color: var(--other-color);
+    border-bottom-style: solid;
+}
+.selected {
+    border-bottom: 3px;
+    border-bottom-color: var(--other-color);
+    border-bottom-style: solid;
+}
