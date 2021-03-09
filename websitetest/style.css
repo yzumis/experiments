@@ -18,7 +18,7 @@ html {
 }
 @media only screen and (max-width: 599px) {
     .name {
-        font-size: 6vw;
+        font-size: 7vw;
         border-bottom: 3px;
         border-bottom-color: var(--other-color);
         border-bottom-style: solid;
